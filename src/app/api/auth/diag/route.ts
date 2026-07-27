@@ -1,4 +1,30 @@
 import { NextResponse } from "next/server";
+import { scrypt } from "node:crypto";
+import { promisify } from "node:util";
+
+const scryptAsync = promisify(scrypt) as (
+  p: string,
+  s: Buffer,
+  k: number
+) => Promise<Buffer>;
+
+/** Run scrypt over a fixed vector to prove it behaves the same here. */
+async function scryptSelfTest() {
+  try {
+    const key = await scryptAsync(
+      "redditos-test-vector",
+      Buffer.from("00112233445566778899aabbccddeeff", "hex"),
+      64
+    );
+    return { ok: true, digest: key.toString("hex").slice(0, 32), error: null };
+  } catch (err) {
+    return {
+      ok: false,
+      digest: null,
+      error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+    };
+  }
+}
 
 // TEMPORARY diagnostic for env-var setup. Reports only shapes and lengths -
 // never the values. Gated by a fixed token so it is not casually probeable.
@@ -18,6 +44,8 @@ export async function GET(req: Request) {
   const parts = (hash ?? "").split(":");
 
   return NextResponse.json({
+    node: process.version,
+    scryptSelfTest: await scryptSelfTest(),
     AUTH_USERNAME: {
       set: Boolean(user),
       length: user?.length ?? 0,
