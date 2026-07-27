@@ -1,12 +1,16 @@
 import Link from "next/link";
-import { getOverviewBundle } from "@/lib/services/overview";
+import { getOverviewBundle, yesterdayDateString } from "@/lib/services/overview";
 import { buildKarmaGrowthSeries } from "@/lib/services/karma";
+import { listContent } from "@/lib/repos/content";
+import { listSubreddits } from "@/lib/repos/subreddits";
 import { formatKarma } from "@/lib/format";
 import { StatTile, Delta } from "@/components/StatTile";
 import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
 import GrowthChart from "@/components/GrowthChart";
 import QuickLog from "@/components/QuickLog";
+import ContentBox from "@/components/ContentBox";
+import YesterdayWidget from "@/components/YesterdayWidget";
 import EmptyState from "@/components/EmptyState";
 import SetupNotice from "@/components/SetupNotice";
 
@@ -31,6 +35,10 @@ export default async function Dashboard() {
     );
   }
 
+  const [content, subreddits] = await Promise.all([
+    listContent(null, 20),
+    listSubreddits(),
+  ]);
   const growth = buildKarmaGrowthSeries(snapshots, null, 30);
   const dailyLog = daily.slice(0, 20);
 
@@ -56,7 +64,16 @@ export default async function Dashboard() {
         <StatTile label="Comments today" value={String(commentsToday)} />
       </div>
 
-      <QuickLog accounts={accounts} recent={dailyLog} />
+      <YesterdayWidget accounts={accounts} date={yesterdayDateString()} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <QuickLog accounts={accounts} recent={dailyLog} />
+        <ContentBox
+          accounts={accounts}
+          subreddits={subreddits.map((s) => s.name)}
+          recent={content}
+        />
+      </div>
 
       <section className="card overflow-hidden">
         <h2 className="border-b border-[var(--gridline)] px-4 py-3 text-sm font-semibold">

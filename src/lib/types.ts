@@ -43,6 +43,8 @@ export type AccountOverview = Account & {
   comment_count: number;
   posts_today: number;
   comments_today: number;
+  posts_yesterday: number;
+  comments_yesterday: number;
   last_logged_date: string | null;
 };
 

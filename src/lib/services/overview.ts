@@ -17,10 +17,19 @@ import { getSubredditsByAccount } from "@/lib/repos/subreddits";
 
 const DAY = 86400;
 
-export function todayDateString(): string {
-  const d = new Date();
+function dateString(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function todayDateString(): string {
+  return dateString(new Date());
+}
+
+export function yesterdayDateString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return dateString(d);
 }
 
 /** Snapshots grouped by account, each already ordered oldest-first. */
@@ -62,9 +71,15 @@ function build(
   const dayBaseline = baselineAt(snapshots, todayStart);
 
   // A day can hold several entries - sum them.
-  const todayRows = daily.filter((r) => r.activity_date === today);
-  const postsToday = todayRows.reduce((s, r) => s + r.posts_count, 0);
-  const commentsToday = todayRows.reduce((s, r) => s + r.comments_count, 0);
+  const sumFor = (date: string) => {
+    const rows = daily.filter((r) => r.activity_date === date);
+    return {
+      posts: rows.reduce((s, r) => s + r.posts_count, 0),
+      comments: rows.reduce((s, r) => s + r.comments_count, 0),
+    };
+  };
+  const todayTotals = sumFor(today);
+  const yesterdayTotals = sumFor(yesterdayDateString());
 
   return {
     ...account,
@@ -78,8 +93,10 @@ function build(
       latest && dayBaseline ? latest.total_karma - dayBaseline.total_karma : 0,
     post_count: daily.reduce((s, r) => s + r.posts_count, 0),
     comment_count: daily.reduce((s, r) => s + r.comments_count, 0),
-    posts_today: postsToday,
-    comments_today: commentsToday,
+    posts_today: todayTotals.posts,
+    comments_today: todayTotals.comments,
+    posts_yesterday: yesterdayTotals.posts,
+    comments_yesterday: yesterdayTotals.comments,
     last_logged_date: daily[0]?.activity_date ?? null,
   };
 }
