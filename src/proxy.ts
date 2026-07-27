@@ -3,11 +3,7 @@ import { verifySession, SESSION_COOKIE } from "@/lib/auth";
 
 // Everything is private. Only the login page and the login endpoint are
 // reachable without a valid session cookie.
-const PUBLIC_PATHS = [
-  "/login",
-  "/api/auth/login",
-  "/api/auth/diag", // temporary setup diagnostic; remove with the route
-];
+const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 
 export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
