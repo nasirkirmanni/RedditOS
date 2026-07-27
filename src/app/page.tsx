@@ -3,12 +3,11 @@ import { getAccountOverviews } from "@/lib/services/overview";
 import { getKarmaGrowthSeries } from "@/lib/services/karma";
 import { listAccounts } from "@/lib/repos/accounts";
 import { listDailyActivity } from "@/lib/repos/dailyActivity";
-import { formatKarma, timeAgo } from "@/lib/format";
+import { formatKarma } from "@/lib/format";
 import { StatTile, Delta } from "@/components/StatTile";
 import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
 import GrowthChart from "@/components/GrowthChart";
-import TrackButton from "@/components/TrackButton";
 import QuickLog from "@/components/QuickLog";
 import EmptyState from "@/components/EmptyState";
 import SetupNotice from "@/components/SetupNotice";
@@ -22,9 +21,10 @@ export default async function Dashboard() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <SetupNotice />
         <EmptyState
           title="No accounts yet"
-          message="Add your Reddit accounts to start tracking karma. Just a username - no passwords, no verification."
+          message="Add your Reddit accounts to start tracking. Just a username - no passwords, no verification."
           actionHref="/accounts"
           actionLabel="Add an account"
         />
@@ -39,45 +39,26 @@ export default async function Dashboard() {
   ]);
 
   const totalKarma = accounts.reduce((s, a) => s + a.total_karma, 0);
-  const karmaToday = accounts.reduce((s, a) => s + a.karma_today, 0);
   const karma7d = accounts.reduce((s, a) => s + a.karma_delta_7d, 0);
   const postsToday = accounts.reduce((s, a) => s + a.posts_today, 0);
   const commentsToday = accounts.reduce((s, a) => s + a.comments_today, 0);
-  const trackErrors = accounts.filter((a) => a.last_sync_status === "error");
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <TrackButton />
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
       <SetupNotice />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Accounts" value={String(accounts.length)} />
         <StatTile
           label="Total karma"
           value={formatKarma(totalKarma)}
-          sub={<Delta value={karmaToday} suffix=" today" />}
-        />
-        <StatTile
-          label="Karma this week"
-          value={karma7d >= 0 ? `+${formatKarma(karma7d)}` : formatKarma(karma7d)}
+          sub={<Delta value={karma7d} suffix=" this week" />}
         />
         <StatTile label="Posts today" value={String(postsToday)} />
         <StatTile label="Comments today" value={String(commentsToday)} />
       </div>
-
-      {trackErrors.length ? (
-        <p
-          className="card px-4 py-3 text-sm"
-          style={{ color: "var(--warning)" }}
-        >
-          Karma tracking failed for {trackErrors.length} account
-          {trackErrors.length > 1 ? "s" : ""}: {trackErrors[0].last_sync_error}
-        </p>
-      ) : null}
 
       <QuickLog accounts={accountList} recent={dailyLog} />
 
@@ -86,21 +67,22 @@ export default async function Dashboard() {
           Accounts
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-[var(--gridline)] text-left text-xs uppercase tracking-wide text-[var(--text-muted)]">
                 <th className="px-4 py-2.5 font-medium">Account</th>
                 <th className="px-3 py-2.5 font-medium">Status</th>
                 <th className="tabular px-3 py-2.5 text-right font-medium">Karma</th>
-                <th className="tabular px-3 py-2.5 text-right font-medium">Today</th>
-                <th className="tabular px-3 py-2.5 text-right font-medium">7 days</th>
+                <th className="tabular px-3 py-2.5 text-right font-medium">
+                  This week
+                </th>
                 <th className="tabular px-3 py-2.5 text-right font-medium">
                   Posts today
                 </th>
                 <th className="tabular px-3 py-2.5 text-right font-medium">
                   Comments today
                 </th>
-                <th className="px-4 py-2.5 font-medium">Tracked</th>
+                <th className="px-4 py-2.5 font-medium">Last entry</th>
               </tr>
             </thead>
             <tbody>
@@ -122,10 +104,7 @@ export default async function Dashboard() {
                     <StatusBadge status={a.status} />
                   </td>
                   <td className="tabular px-3 py-2.5 text-right font-semibold">
-                    {formatKarma(a.total_karma)}
-                  </td>
-                  <td className="tabular px-3 py-2.5 text-right">
-                    <Delta value={a.karma_today} />
+                    {a.total_karma ? formatKarma(a.total_karma) : "-"}
                   </td>
                   <td className="tabular px-3 py-2.5 text-right">
                     <Delta value={a.karma_delta_7d} />
@@ -134,12 +113,8 @@ export default async function Dashboard() {
                   <td className="tabular px-3 py-2.5 text-right">
                     {a.comments_today}
                   </td>
-                  <td className="px-4 py-2.5 text-[var(--text-secondary)]">
-                    {a.last_sync_status === "error" ? (
-                      <span style={{ color: "var(--critical)" }}>failed</span>
-                    ) : (
-                      timeAgo(a.last_tracked_at)
-                    )}
+                  <td className="tabular px-4 py-2.5 text-[var(--text-secondary)]">
+                    {a.last_logged_date ?? "never"}
                   </td>
                 </tr>
               ))}

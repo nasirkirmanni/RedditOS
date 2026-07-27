@@ -3,12 +3,11 @@ import { getAccountByUsername } from "@/lib/repos/accounts";
 import { getKarmaHistory } from "@/lib/repos/karma";
 import { listDailyActivityForAccount } from "@/lib/repos/dailyActivity";
 import { getAccountOverview } from "@/lib/services/overview";
-import { formatKarma, timeAgo } from "@/lib/format";
+import { formatKarma } from "@/lib/format";
 import { StatTile, Delta } from "@/components/StatTile";
 import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
 import KarmaChart from "@/components/KarmaChart";
-import TrackButton from "@/components/TrackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,14 +45,8 @@ export default async function AccountDetailPage({
           </div>
           <p className="mt-0.5 text-sm text-[var(--text-muted)]">
             {account.label ? `${account.label} - ` : ""}
-            {accountAge(account.reddit_created_utc)} - karma tracked{" "}
-            {timeAgo(account.last_sync_at)}
-            {account.last_sync_status === "error" ? (
-              <span style={{ color: "var(--critical)" }}>
-                {" "}
-                - {account.last_sync_error}
-              </span>
-            ) : null}
+            {accountAge(account.reddit_created_utc)} - last entry{" "}
+            {overview.last_logged_date ?? "never"}
           </p>
           {overview.subreddits.length ? (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -73,7 +66,6 @@ export default async function AccountDetailPage({
             </p>
           ) : null}
         </div>
-        <TrackButton accountId={account.id} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

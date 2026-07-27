@@ -54,7 +54,6 @@ async function build(
     posts_today: todayRow?.posts_count ?? 0,
     comments_today: todayRow?.comments_count ?? 0,
     last_logged_date: lastLogged,
-    last_tracked_at: account.last_sync_at,
   };
 }
 

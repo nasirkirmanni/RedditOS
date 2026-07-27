@@ -22,7 +22,7 @@ export default function KarmaChart({ snapshots }: { snapshots: Snapshot[] }) {
   if (snapshots.length < 2) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-[var(--text-muted)]">
-        Karma history builds as the tracker runs — check back after a few syncs.
+        Record a karma total for two or more days and the chart appears here.
       </div>
     );
   }

@@ -28,13 +28,18 @@ export default function QuickLog({
     accounts.length === 1 ? String(accounts[0].id) : ""
   );
   const [date, setDate] = useState(todayString());
+  const [karma, setKarma] = useState("");
   const [posts, setPosts] = useState("0");
   const [comments, setComments] = useState("0");
-  const [karma, setKarma] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+
+  // Show the account's last recorded karma as a reference point.
+  const lastKarma = recent.find(
+    (r) => String(r.account_id) === accountId && r.total_karma != null
+  )?.total_karma;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,10 +65,10 @@ export default function QuickLog({
         return;
       }
       const name = accounts.find((a) => String(a.id) === accountId)?.username;
-      setOk(`Logged for u/${name} on ${date}.`);
+      setOk(`Saved for u/${name} on ${date}.`);
+      setKarma("");
       setPosts("0");
       setComments("0");
-      setKarma("");
       setNotes("");
       router.refresh();
     } finally {
@@ -78,10 +83,11 @@ export default function QuickLog({
 
   return (
     <section className="card px-5 py-4">
-      <h2 className="text-sm font-semibold">Log activity</h2>
+      <h2 className="text-sm font-semibold">Record activity</h2>
       <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-        Record how many posts and comments an account made on a day. Re-saving
-        the same account and date overwrites that day&apos;s entry.
+        Enter an account&apos;s current karma total and what it posted that day.
+        Karma totals build the growth chart. Saving the same account and date
+        again overwrites that entry.
       </p>
 
       <form onSubmit={submit} className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
@@ -118,6 +124,25 @@ export default function QuickLog({
           />
         </div>
         <div>
+          <label htmlFor="ql-karma" className={labelCls}>
+            Total karma
+          </label>
+          <input
+            id="ql-karma"
+            type="number"
+            min="0"
+            value={karma}
+            onChange={(e) => setKarma(e.target.value)}
+            placeholder={lastKarma != null ? String(lastKarma) : "e.g. 1250"}
+            className={input}
+          />
+          {lastKarma != null ? (
+            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+              last: {lastKarma.toLocaleString()}
+            </p>
+          ) : null}
+        </div>
+        <div>
           <label htmlFor="ql-posts" className={labelCls}>
             Posts
           </label>
@@ -140,23 +165,6 @@ export default function QuickLog({
             min="0"
             value={comments}
             onChange={(e) => setComments(e.target.value)}
-            className={input}
-          />
-        </div>
-        <div>
-          <label htmlFor="ql-karma" className={labelCls}>
-            Total karma
-            <span className="ml-1 font-normal text-[var(--text-muted)]">
-              (optional)
-            </span>
-          </label>
-          <input
-            id="ql-karma"
-            type="number"
-            min="0"
-            value={karma}
-            onChange={(e) => setKarma(e.target.value)}
-            placeholder="—"
             className={input}
           />
         </div>
@@ -211,10 +219,10 @@ export default function QuickLog({
                   u/{r.username}
                 </span>
                 <span className="tabular text-[var(--text-secondary)]">
-                  {r.posts_count} posts · {r.comments_count} comments
                   {r.total_karma != null
-                    ? ` · ${r.total_karma.toLocaleString()} karma`
+                    ? `${r.total_karma.toLocaleString()} karma · `
                     : ""}
+                  {r.posts_count} posts · {r.comments_count} comments
                 </span>
                 <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-muted)]">
                   {r.notes ?? ""}

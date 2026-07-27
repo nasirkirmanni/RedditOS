@@ -20,9 +20,6 @@ export type Account = {
   avatar_url: string | null;
   reddit_created_utc: number | null;
   created_at: number;
-  last_sync_at: number | null;
-  last_sync_status: "ok" | "error" | null;
-  last_sync_error: string | null;
   projects: { id: number; name: string }[];
 };
 
@@ -47,7 +44,6 @@ export type AccountOverview = Account & {
   posts_today: number;
   comments_today: number;
   last_logged_date: string | null;
-  last_tracked_at: number | null;
 };
 
 // ---- conversion helpers used by repositories ----

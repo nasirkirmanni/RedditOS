@@ -20,9 +20,6 @@ function mapAccount(row: any): Account {
     avatar_url: row.avatar_url ?? null,
     reddit_created_utc: toEpoch(row.reddit_created_at),
     created_at: toEpochRequired(row.created_at),
-    last_sync_at: toEpoch(row.last_sync_at),
-    last_sync_status: row.last_sync_status ?? null,
-    last_sync_error: row.last_sync_error ?? null,
     projects: (row.account_projects ?? [])
       .map((ap: any) => ap.projects)
       .filter(Boolean)
@@ -107,27 +104,6 @@ export async function updateAccount(
   if (!Object.keys(row).length) return;
   const { error } = await getSupabase().from("accounts").update(row).eq("id", id);
   if (error) throw new Error(`account update failed: ${error.message}`);
-}
-
-/** Record the outcome of a karma-tracking run. */
-export async function setSyncResult(
-  id: number,
-  result:
-    | { ok: true; avatar_url?: string | null; reddit_created_utc?: number | null }
-    | { ok: false; error: string }
-): Promise<void> {
-  const row: Record<string, unknown> = {
-    last_sync_at: new Date().toISOString(),
-    last_sync_status: result.ok ? "ok" : "error",
-    last_sync_error: result.ok ? null : result.error,
-  };
-  if (result.ok) {
-    if (result.avatar_url) row.avatar_url = result.avatar_url;
-    if (result.reddit_created_utc)
-      row.reddit_created_at = toIso(result.reddit_created_utc);
-  }
-  const { error } = await getSupabase().from("accounts").update(row).eq("id", id);
-  if (error) throw new Error(`track-result update failed: ${error.message}`);
 }
 
 export async function deleteAccount(id: number): Promise<boolean> {

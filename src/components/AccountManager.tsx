@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Trash2, Pencil, Check, X } from "lucide-react";
 import type { AccountOverview, ManagementStatus } from "@/lib/types";
-import { formatKarma, timeAgo } from "@/lib/format";
+import { formatKarma } from "@/lib/format";
 import Avatar from "@/components/Avatar";
 import { StatusBadge } from "@/components/Badges";
 import { Delta } from "@/components/StatTile";
@@ -186,14 +186,14 @@ export default function AccountManager({
               <div className="mt-3 flex items-end justify-between border-y border-[var(--gridline)] py-3">
                 <div>
                   <p className="tabular text-xl font-bold">
-                    {formatKarma(a.total_karma)}
+                    {a.total_karma ? formatKarma(a.total_karma) : "-"}
                   </p>
                   <p className="text-[11px] text-[var(--text-muted)]">total karma</p>
                 </div>
                 <div className="text-right text-xs">
-                  <Delta value={a.karma_today} suffix=" today" />
-                  <p className="mt-0.5">
-                    <Delta value={a.karma_delta_7d} suffix=" 7d" />
+                  <Delta value={a.karma_delta_7d} suffix=" this week" />
+                  <p className="mt-0.5 text-[var(--text-muted)]">
+                    {a.post_count} posts · {a.comment_count} comments logged
                   </p>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export default function AccountManager({
                   ))}
                 </select>
                 <span className="text-[11px] text-[var(--text-muted)]">
-                  tracked {timeAgo(a.last_tracked_at)}
+                  last entry {a.last_logged_date ?? "never"}
                 </span>
                 <button
                   onClick={() => remove(a.id, a.username)}

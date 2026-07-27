@@ -23,7 +23,8 @@ export default function GrowthChart({
         className="flex items-center justify-center text-sm text-[var(--text-muted)]"
         style={{ height }}
       >
-        Growth history builds as the tracker collects karma snapshots.
+        Record a karma total for two or more days and the growth line appears
+        here.
       </div>
     );
   }
