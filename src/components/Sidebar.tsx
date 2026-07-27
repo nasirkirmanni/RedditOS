@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
+import SignOutButton from "./SignOutButton";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -82,6 +83,8 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <SignOutButton collapsed={collapsed} />
 
       <button
         onClick={toggle}

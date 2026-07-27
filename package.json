@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "migrate": "node scripts/migrate.mjs",
-    "migrate:status": "node scripts/migrate.mjs --status"
+    "migrate:status": "node scripts/migrate.mjs --status",
+    "hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

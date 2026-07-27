@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import Sidebar from "@/components/Sidebar";
+import AppChrome from "@/components/AppChrome";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,12 +34,7 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {`try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`}
         </Script>
-        <div className="flex">
-          <Sidebar />
-          <main className="min-w-0 flex-1 px-6 py-8 lg:px-10">
-            <div className="mx-auto max-w-6xl">{children}</div>
-          </main>
-        </div>
+        <AppChrome>{children}</AppChrome>
       </body>
     </html>
   );
