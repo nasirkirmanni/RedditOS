@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
   listDailyActivity,
-  upsertDailyActivity,
+  addDailyActivity,
 } from "@/lib/repos/dailyActivity";
 import { getAccountById } from "@/lib/repos/accounts";
 import { insertSnapshot } from "@/lib/repos/karma";
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const row = await upsertDailyActivity({
+    const row = await addDailyActivity({
       account_id: accountId,
       activity_date: date,
       posts_count: posts,

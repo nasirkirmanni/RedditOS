@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
-import { getAccountByUsername } from "@/lib/repos/accounts";
 import { getKarmaHistory } from "@/lib/repos/karma";
 import { listDailyActivityForAccount } from "@/lib/repos/dailyActivity";
-import { getAccountOverview } from "@/lib/services/overview";
+import { getAccountOverviewByUsername } from "@/lib/services/overview";
 import { formatKarma } from "@/lib/format";
 import { StatTile, Delta } from "@/components/StatTile";
 import { StatusBadge } from "@/components/Badges";
@@ -24,11 +23,11 @@ export default async function AccountDetailPage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const account = await getAccountByUsername(decodeURIComponent(username));
-  if (!account) notFound();
+  const result = await getAccountOverviewByUsername(decodeURIComponent(username));
+  if (!result) notFound();
+  const { account, overview } = result;
 
-  const [overview, snapshots, log] = await Promise.all([
-    getAccountOverview(account),
+  const [snapshots, log] = await Promise.all([
     getKarmaHistory(account.id),
     listDailyActivityForAccount(account.id),
   ]);

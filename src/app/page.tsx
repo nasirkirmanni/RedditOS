@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { getAccountOverviews } from "@/lib/services/overview";
-import { getKarmaGrowthSeries } from "@/lib/services/karma";
-import { listAccounts } from "@/lib/repos/accounts";
-import { listDailyActivity } from "@/lib/repos/dailyActivity";
+import { getOverviewBundle } from "@/lib/services/overview";
+import { buildKarmaGrowthSeries } from "@/lib/services/karma";
 import { formatKarma } from "@/lib/format";
 import { StatTile, Delta } from "@/components/StatTile";
 import { StatusBadge } from "@/components/Badges";
@@ -15,7 +13,8 @@ import SetupNotice from "@/components/SetupNotice";
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-  const accounts = await getAccountOverviews();
+  // One bundled fetch: accounts, snapshots, activity log and subreddit links.
+  const { overviews: accounts, snapshots, daily } = await getOverviewBundle();
 
   if (accounts.length === 0) {
     return (
@@ -32,11 +31,8 @@ export default async function Dashboard() {
     );
   }
 
-  const [growth, accountList, dailyLog] = await Promise.all([
-    getKarmaGrowthSeries(null, 30),
-    listAccounts(),
-    listDailyActivity(20),
-  ]);
+  const growth = buildKarmaGrowthSeries(snapshots, null, 30);
+  const dailyLog = daily.slice(0, 20);
 
   const totalKarma = accounts.reduce((s, a) => s + a.total_karma, 0);
   const karma7d = accounts.reduce((s, a) => s + a.karma_delta_7d, 0);
@@ -60,7 +56,7 @@ export default async function Dashboard() {
         <StatTile label="Comments today" value={String(commentsToday)} />
       </div>
 
-      <QuickLog accounts={accountList} recent={dailyLog} />
+      <QuickLog accounts={accounts} recent={dailyLog} />
 
       <section className="card overflow-hidden">
         <h2 className="border-b border-[var(--gridline)] px-4 py-3 text-sm font-semibold">

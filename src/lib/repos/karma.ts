@@ -25,6 +25,20 @@ export async function getKarmaHistory(accountId: number): Promise<KarmaSnapshot[
   return (data ?? []).map(mapSnapshot);
 }
 
+/**
+ * Every snapshot, all accounts, oldest first. One round-trip - callers derive
+ * latest values, baselines and chart series in memory instead of issuing a
+ * query per account.
+ */
+export async function getAllSnapshots(): Promise<KarmaSnapshot[]> {
+  const { data, error } = await getSupabase()
+    .from("karma_snapshots")
+    .select("*")
+    .order("taken_at");
+  if (error) throw new Error(`snapshots read failed: ${error.message}`);
+  return (data ?? []).map(mapSnapshot);
+}
+
 /** All snapshots since a timestamp, all accounts (for fleet growth charts). */
 export async function getSnapshotsSince(
   sinceEpoch: number

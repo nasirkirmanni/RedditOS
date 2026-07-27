@@ -1,7 +1,14 @@
-// Account overview: karma totals, growth, and manually logged activity counts.
-import { type Account, type AccountOverview } from "@/lib/types";
-import { listAccounts } from "@/lib/repos/accounts";
-import { getLatestSnapshots, getBaselineSnapshot } from "@/lib/repos/karma";
+// Account overview: karma totals, growth, and logged activity counts.
+//
+// Everything is derived from four parallel queries regardless of how many
+// accounts exist - no per-account round-trips.
+import {
+  type Account,
+  type AccountOverview,
+  type KarmaSnapshot,
+} from "@/lib/types";
+import { listAccounts, getAccountByUsername } from "@/lib/repos/accounts";
+import { getAllSnapshots } from "@/lib/repos/karma";
 import {
   listAllDailyActivity,
   type DailyActivity,
@@ -16,32 +23,52 @@ export function todayDateString(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function dateStringToEpoch(date: string): number {
-  return Math.floor(new Date(`${date}T12:00:00`).getTime() / 1000);
+/** Snapshots grouped by account, each already ordered oldest-first. */
+function groupSnapshots(all: KarmaSnapshot[]): Map<number, KarmaSnapshot[]> {
+  const byAccount = new Map<number, KarmaSnapshot[]>();
+  for (const s of all) {
+    const list = byAccount.get(s.account_id);
+    if (list) list.push(s);
+    else byAccount.set(s.account_id, [s]);
+  }
+  return byAccount;
 }
 
-async function build(
+/** Most recent snapshot at or before a cutoff, else the oldest available. */
+function baselineAt(
+  snapshots: KarmaSnapshot[],
+  cutoffEpoch: number
+): KarmaSnapshot | undefined {
+  let baseline: KarmaSnapshot | undefined;
+  for (const s of snapshots) {
+    if (s.taken_at <= cutoffEpoch) baseline = s;
+    else break; // ordered oldest-first
+  }
+  return baseline ?? snapshots[0];
+}
+
+function build(
   account: Account,
-  dailyRows: DailyActivity[],
-  subs: string[]
-): Promise<AccountOverview> {
+  snapshots: KarmaSnapshot[],
+  daily: DailyActivity[],
+  subreddits: string[]
+): AccountOverview {
   const now = Math.floor(Date.now() / 1000);
   const today = todayDateString();
+  const todayStart = Math.floor(new Date(`${today}T00:00:00`).getTime() / 1000);
 
-  const [latestMap, weekBaseline, dayBaseline] = await Promise.all([
-    getLatestSnapshots([account.id]),
-    getBaselineSnapshot(account.id, now - 7 * DAY),
-    getBaselineSnapshot(account.id, dateStringToEpoch(today) - 12 * 3600),
-  ]);
+  const latest = snapshots[snapshots.length - 1];
+  const weekBaseline = baselineAt(snapshots, now - 7 * DAY);
+  const dayBaseline = baselineAt(snapshots, todayStart);
 
-  const mine = dailyRows.filter((r) => r.account_id === account.id);
-  const todayRow = mine.find((r) => r.activity_date === today);
-  const lastLogged = mine[0]?.activity_date ?? null;
-  const latest = latestMap.get(account.id);
+  // A day can hold several entries - sum them.
+  const todayRows = daily.filter((r) => r.activity_date === today);
+  const postsToday = todayRows.reduce((s, r) => s + r.posts_count, 0);
+  const commentsToday = todayRows.reduce((s, r) => s + r.comments_count, 0);
 
   return {
     ...account,
-    subreddits: subs,
+    subreddits,
     total_karma: latest?.total_karma ?? 0,
     link_karma: latest?.link_karma ?? 0,
     comment_karma: latest?.comment_karma ?? 0,
@@ -49,31 +76,70 @@ async function build(
       latest && weekBaseline ? latest.total_karma - weekBaseline.total_karma : 0,
     karma_today:
       latest && dayBaseline ? latest.total_karma - dayBaseline.total_karma : 0,
-    post_count: mine.reduce((s, r) => s + r.posts_count, 0),
-    comment_count: mine.reduce((s, r) => s + r.comments_count, 0),
-    posts_today: todayRow?.posts_count ?? 0,
-    comments_today: todayRow?.comments_count ?? 0,
-    last_logged_date: lastLogged,
+    post_count: daily.reduce((s, r) => s + r.posts_count, 0),
+    comment_count: daily.reduce((s, r) => s + r.comments_count, 0),
+    posts_today: postsToday,
+    comments_today: commentsToday,
+    last_logged_date: daily[0]?.activity_date ?? null,
   };
 }
 
-export async function getAccountOverviews(): Promise<AccountOverview[]> {
-  const [accounts, dailyRows, subsByAccount] = await Promise.all([
+export type OverviewBundle = {
+  overviews: AccountOverview[];
+  snapshots: KarmaSnapshot[];
+  daily: DailyActivity[];
+};
+
+/** Single fetch of everything the dashboard needs. */
+export async function getOverviewBundle(): Promise<OverviewBundle> {
+  const [accounts, snapshots, daily, subsByAccount] = await Promise.all([
     listAccounts(),
+    getAllSnapshots(),
     listAllDailyActivity(),
     getSubredditsByAccount(),
   ]);
-  return Promise.all(
-    accounts.map((a) => build(a, dailyRows, subsByAccount.get(a.id) ?? []))
+
+  const snapshotsByAccount = groupSnapshots(snapshots);
+  const dailyByAccount = new Map<number, DailyActivity[]>();
+  for (const row of daily) {
+    const list = dailyByAccount.get(row.account_id);
+    if (list) list.push(row);
+    else dailyByAccount.set(row.account_id, [row]);
+  }
+
+  const overviews = accounts.map((a) =>
+    build(
+      a,
+      snapshotsByAccount.get(a.id) ?? [],
+      dailyByAccount.get(a.id) ?? [],
+      subsByAccount.get(a.id) ?? []
+    )
   );
+  return { overviews, snapshots, daily };
 }
 
-export async function getAccountOverview(
-  account: Account
-): Promise<AccountOverview> {
-  const [dailyRows, subsByAccount] = await Promise.all([
+export async function getAccountOverviews(): Promise<AccountOverview[]> {
+  return (await getOverviewBundle()).overviews;
+}
+
+/** Overview for one account, by username - three parallel queries. */
+export async function getAccountOverviewByUsername(
+  username: string
+): Promise<{ account: Account; overview: AccountOverview } | null> {
+  const account = await getAccountByUsername(username);
+  if (!account) return null;
+  const [snapshots, daily, subsByAccount] = await Promise.all([
+    getAllSnapshots(),
     listAllDailyActivity(),
     getSubredditsByAccount(),
   ]);
-  return build(account, dailyRows, subsByAccount.get(account.id) ?? []);
+  return {
+    account,
+    overview: build(
+      account,
+      snapshots.filter((s) => s.account_id === account.id),
+      daily.filter((d) => d.account_id === account.id),
+      subsByAccount.get(account.id) ?? []
+    ),
+  };
 }

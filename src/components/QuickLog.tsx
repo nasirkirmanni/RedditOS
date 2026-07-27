@@ -65,7 +65,14 @@ export default function QuickLog({
         return;
       }
       const name = accounts.find((a) => String(a.id) === accountId)?.username;
-      setOk(`Saved for u/${name} on ${date}.`);
+      const added: string[] = [];
+      if (Number(posts) > 0) added.push(`${posts} post${posts === "1" ? "" : "s"}`);
+      if (Number(comments) > 0)
+        added.push(`${comments} comment${comments === "1" ? "" : "s"}`);
+      if (karma !== "") added.push(`${Number(karma).toLocaleString()} karma`);
+      setOk(
+        `Added ${added.join(", ") || "entry"} for u/${name} on ${date} - day total is now ${json.posts_count} posts, ${json.comments_count} comments.`
+      );
       setKarma("");
       setPosts("0");
       setComments("0");
@@ -85,9 +92,8 @@ export default function QuickLog({
     <section className="card px-5 py-4">
       <h2 className="text-sm font-semibold">Record activity</h2>
       <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-        Enter an account&apos;s current karma total and what it posted that day.
-        Karma totals build the growth chart. Saving the same account and date
-        again overwrites that entry.
+        Log what an account posted, and its current karma total. Every save is
+        added to that day - log 3 comments now and 2 later and the day shows 5.
       </p>
 
       <form onSubmit={submit} className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
@@ -210,8 +216,14 @@ export default function QuickLog({
             Recent entries
           </h3>
           <ul className="divide-y divide-[var(--gridline)]">
-            {recent.slice(0, 8).map((r) => (
+            {recent.slice(0, 8).map((r, i) => (
               <li key={r.id} className="flex items-center gap-3 py-2 text-sm">
+                <span
+                  className="tabular shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]"
+                  style={{ background: "var(--surface-2)" }}
+                >
+                  #{recent.length - i}
+                </span>
                 <span className="tabular w-24 shrink-0 text-xs text-[var(--text-muted)]">
                   {r.activity_date}
                 </span>
