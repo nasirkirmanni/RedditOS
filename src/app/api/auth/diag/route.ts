@@ -43,9 +43,27 @@ export async function GET(req: Request) {
   const secret = process.env.AUTH_SECRET;
   const parts = (hash ?? "").split(":");
 
+  // Optional: check a candidate password through the real verify path.
+  const candidate = new URL(req.url).searchParams.get("pw");
+  let verifyCheck: unknown = null;
+  if (candidate) {
+    try {
+      const { verifyPassword } = await import("@/lib/password");
+      verifyCheck = {
+        matches: await verifyPassword(candidate, hash ?? ""),
+        candidateLength: candidate.length,
+      };
+    } catch (err) {
+      verifyCheck = {
+        error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      };
+    }
+  }
+
   return NextResponse.json({
     node: process.version,
     scryptSelfTest: await scryptSelfTest(),
+    verifyCheck,
     AUTH_USERNAME: {
       set: Boolean(user),
       length: user?.length ?? 0,
