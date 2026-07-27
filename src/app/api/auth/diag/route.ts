@@ -49,8 +49,16 @@ export async function GET(req: Request) {
   if (candidate) {
     try {
       const { verifyPassword } = await import("@/lib/password");
+      // Independent inline check: split on ":" and compare the full digest.
+      const [, saltHex, digestHex] = (hash ?? "").split(":");
+      const derived = saltHex
+        ? (await scryptAsync(candidate, Buffer.from(saltHex, "hex"), 64)).toString("hex")
+        : null;
       verifyCheck = {
-        matches: await verifyPassword(candidate, hash ?? ""),
+        viaPasswordModule: await verifyPassword(candidate, hash ?? ""),
+        inlineMatches: derived != null && derived === digestHex,
+        derivedPrefix: derived?.slice(0, 16) ?? null,
+        storedPrefix: digestHex?.slice(0, 16) ?? null,
         candidateLength: candidate.length,
       };
     } catch (err) {
