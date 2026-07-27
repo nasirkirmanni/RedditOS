@@ -64,11 +64,14 @@ export async function listDailyActivityForAccount(
   return (data ?? []).map(map);
 }
 
-/** All rows, used by the overview service to fold manual counts into totals. */
+/**
+ * All rows, used by the overview service and the dashboard's entry list.
+ * Includes the account username so callers can render entries directly.
+ */
 export async function listAllDailyActivity(): Promise<DailyActivity[]> {
   const { data, error } = await getSupabase()
     .from("daily_activity")
-    .select("*")
+    .select("*, accounts(username)")
     .order("activity_date", { ascending: false })
     .order("id", { ascending: false });
   if (isMissingTable(error)) {
