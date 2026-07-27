@@ -33,7 +33,9 @@ export async function GET(req: Request) {
       saltLength: parts[1]?.length ?? 0, // expect 32
       hashLength: parts[2]?.length ?? 0, // expect 128
       hasWhitespace: hash ? hash !== hash.trim() : false,
-      startsWith: hash?.slice(0, 7) ?? null,
+      // The salt is not secret - it is stored beside the hash by design.
+      salt: parts[1] ?? null,
+      digestPrefix: parts[2]?.slice(0, 16) ?? null,
     },
     AUTH_SECRET: {
       set: Boolean(secret),
