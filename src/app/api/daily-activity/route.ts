@@ -6,6 +6,7 @@ import {
 } from "@/lib/repos/dailyActivity";
 import { getAccountById } from "@/lib/repos/accounts";
 import { insertSnapshot } from "@/lib/repos/karma";
+import { zonedEpoch } from "@/lib/date";
 
 export async function GET() {
   return NextResponse.json(await listDailyActivity());
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
         link_karma: 0,
         comment_karma: 0,
         total_karma: totalKarma,
-        taken_at: Math.floor(new Date(`${date}T12:00:00`).getTime() / 1000),
+        taken_at: zonedEpoch(date, 12),
       });
     }
 

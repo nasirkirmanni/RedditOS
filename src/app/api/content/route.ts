@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { addContent, listContent } from "@/lib/repos/content";
 import { addDailyActivity } from "@/lib/repos/dailyActivity";
 import { getAccountById } from "@/lib/repos/accounts";
+import { zonedEpoch } from "@/lib/date";
 
 export async function GET(req: Request) {
   const accountId = new URL(req.url).searchParams.get("accountId");
@@ -45,8 +46,9 @@ export async function POST(req: Request) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
-  // Store at midday so the stored timestamp lands on the intended local date.
-  const postedAt = Math.floor(new Date(`${date}T12:00:00`).getTime() / 1000);
+  // Midday in the app timezone, so the stored instant always reads back as the
+  // date the user chose - not the server's UTC date.
+  const postedAt = zonedEpoch(date, 12);
 
   try {
     const item = await addContent({

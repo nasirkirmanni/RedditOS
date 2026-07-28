@@ -1,3 +1,8 @@
+import { APP_TIMEZONE } from "./date";
+
+// Dates are rendered on the server, so they must be formatted in the app
+// timezone - otherwise they come out in the host's UTC.
+
 export function timeAgo(utcSeconds: number | null): string {
   if (!utcSeconds) return "never";
   const diff = Math.floor(Date.now() / 1000) - utcSeconds;
@@ -5,13 +10,19 @@ export function timeAgo(utcSeconds: number | null): string {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 30 * 86400) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(utcSeconds * 1000).toLocaleDateString();
+  return new Date(utcSeconds * 1000).toLocaleDateString("en-GB", {
+    timeZone: APP_TIMEZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export function formatDate(utcSeconds: number): string {
-  return new Date(utcSeconds * 1000).toLocaleString(undefined, {
-    month: "short",
+  return new Date(utcSeconds * 1000).toLocaleString("en-GB", {
+    timeZone: APP_TIMEZONE,
     day: "numeric",
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
   });

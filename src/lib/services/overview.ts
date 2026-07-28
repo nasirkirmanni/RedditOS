@@ -14,23 +14,15 @@ import {
   type DailyActivity,
 } from "@/lib/repos/dailyActivity";
 import { getSubredditsByAccount } from "@/lib/repos/subreddits";
+import {
+  todayDateString,
+  yesterdayDateString,
+  startOfTodayEpoch,
+} from "@/lib/date";
 
 const DAY = 86400;
 
-function dateString(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-export function todayDateString(): string {
-  return dateString(new Date());
-}
-
-export function yesterdayDateString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return dateString(d);
-}
+export { todayDateString, yesterdayDateString };
 
 /** Snapshots grouped by account, each already ordered oldest-first. */
 function groupSnapshots(all: KarmaSnapshot[]): Map<number, KarmaSnapshot[]> {
@@ -64,7 +56,7 @@ function build(
 ): AccountOverview {
   const now = Math.floor(Date.now() / 1000);
   const today = todayDateString();
-  const todayStart = Math.floor(new Date(`${today}T00:00:00`).getTime() / 1000);
+  const todayStart = startOfTodayEpoch();
 
   const latest = snapshots[snapshots.length - 1];
   const weekBaseline = baselineAt(snapshots, now - 7 * DAY);
