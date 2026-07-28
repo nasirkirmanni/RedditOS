@@ -129,8 +129,7 @@ export default function QuickLog({
   }
 
   async function removeContent(id: string) {
-    if (!confirm("Delete this saved text? The day's count is not changed."))
-      return;
+    if (!confirm("Delete this? It also comes off that day's count.")) return;
     await fetch(`/api/content/${encodeURIComponent(id)}`, { method: "DELETE" });
     router.refresh();
   }

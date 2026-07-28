@@ -139,6 +139,19 @@ export async function listContent(
     .slice(0, limit);
 }
 
+/** Fetch a single item, so a caller knows what it is before removing it. */
+export async function getContent(id: string): Promise<ContentItem | null> {
+  const isPost = id.startsWith("t3_");
+  const { data, error } = await getSupabase()
+    .from(isPost ? "posts" : "comments")
+    .select("*, accounts(username)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`content read failed: ${error.message}`);
+  if (!data) return null;
+  return isPost ? mapPost(data) : mapComment(data);
+}
+
 export async function deleteContent(id: string): Promise<boolean> {
   const table = id.startsWith("t3_") ? "posts" : "comments";
   const { error, count } = await getSupabase()

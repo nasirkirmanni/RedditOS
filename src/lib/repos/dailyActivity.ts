@@ -152,6 +152,65 @@ export async function addDailyActivity(input: {
   return map(data);
 }
 
+/**
+ * Reduce a day's counts, used when saved content is deleted. Counts never go
+ * below zero, and a row left with nothing in it is removed rather than kept as
+ * an empty entry.
+ */
+export async function decrementDailyActivity(
+  accountId: number,
+  date: string,
+  posts: number,
+  comments: number
+): Promise<void> {
+  if (posts === 0 && comments === 0) return;
+  const db = getSupabase();
+  const { data, error } = await db
+    .from("daily_activity")
+    .select("*")
+    .eq("account_id", accountId)
+    .eq("activity_date", date)
+    .order("id", { ascending: false });
+  if (isMissingTable(error)) return;
+  if (error) throw new Error(`daily activity read failed: ${error.message}`);
+
+  let postsLeft = posts;
+  let commentsLeft = comments;
+
+  // Newest entries give up their counts first.
+  for (const row of data ?? []) {
+    if (postsLeft === 0 && commentsLeft === 0) break;
+    const takePosts = Math.min(row.posts_count, postsLeft);
+    const takeComments = Math.min(row.comments_count, commentsLeft);
+    if (takePosts === 0 && takeComments === 0) continue;
+
+    const nextPosts = row.posts_count - takePosts;
+    const nextComments = row.comments_count - takeComments;
+    postsLeft -= takePosts;
+    commentsLeft -= takeComments;
+
+    const nowEmpty =
+      nextPosts === 0 &&
+      nextComments === 0 &&
+      row.total_karma == null &&
+      !row.notes;
+
+    const { error: writeError } = nowEmpty
+      ? await db.from("daily_activity").delete().eq("id", row.id)
+      : await db
+          .from("daily_activity")
+          .update({
+            posts_count: nextPosts,
+            comments_count: nextComments,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", row.id);
+    if (writeError) {
+      throw new Error(`daily activity update failed: ${writeError.message}`);
+    }
+  }
+}
+
 export async function deleteDailyActivity(id: number): Promise<boolean> {
   const { error, count } = await getSupabase()
     .from("daily_activity")
