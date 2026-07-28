@@ -13,8 +13,12 @@ export async function GET(req: Request) {
 }
 
 /**
- * Save a written post or comment. Also adds 1 to that day's count so the
- * dashboard totals stay in step - no need to log the count separately.
+ * Save the text of a post or comment.
+ *
+ * Counting is the caller's job: the activity form submits the day's numbers
+ * itself, so incrementing here as well would double-count. Pass
+ * `count: true` to have this add 1 to the day (used by anything that saves
+ * content on its own).
  */
 export async function POST(req: Request) {
   const body = await req.json();
@@ -61,14 +65,16 @@ export async function POST(req: Request) {
       posted_at: postedAt,
     });
 
-    await addDailyActivity({
-      account_id: accountId,
-      activity_date: date,
-      posts_count: kind === "post" ? 1 : 0,
-      comments_count: kind === "comment" ? 1 : 0,
-      total_karma: null,
-      notes: null,
-    });
+    if (body.count === true) {
+      await addDailyActivity({
+        account_id: accountId,
+        activity_date: date,
+        posts_count: kind === "post" ? 1 : 0,
+        comments_count: kind === "comment" ? 1 : 0,
+        total_karma: null,
+        notes: null,
+      });
+    }
 
     for (const p of ["/", "/activity", "/accounts"]) revalidatePath(p);
     return NextResponse.json(item, { status: 201 });

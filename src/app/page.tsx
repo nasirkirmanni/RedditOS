@@ -9,7 +9,6 @@ import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
 import GrowthChart from "@/components/GrowthChart";
 import QuickLog from "@/components/QuickLog";
-import ContentBox from "@/components/ContentBox";
 import YesterdayWidget from "@/components/YesterdayWidget";
 import EmptyState from "@/components/EmptyState";
 import SetupNotice from "@/components/SetupNotice";
@@ -66,14 +65,12 @@ export default async function Dashboard() {
 
       <YesterdayWidget accounts={accounts} date={yesterdayDateString()} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <QuickLog accounts={accounts} recent={dailyLog} />
-        <ContentBox
-          accounts={accounts}
-          subreddits={subreddits.map((s) => s.name)}
-          recent={content}
-        />
-      </div>
+      <QuickLog
+        accounts={accounts}
+        recent={dailyLog}
+        subreddits={subreddits.map((s) => s.name)}
+        content={content}
+      />
 
       <section className="card overflow-hidden">
         <h2 className="border-b border-[var(--gridline)] px-4 py-3 text-sm font-semibold">
