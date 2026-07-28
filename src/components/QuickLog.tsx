@@ -34,7 +34,6 @@ export default function QuickLog({
     accounts.length === 1 ? String(accounts[0].id) : ""
   );
   const [date, setDate] = useState(todayString());
-  const [karma, setKarma] = useState("");
   const [posts, setPosts] = useState("0");
   const [comments, setComments] = useState("0");
   const [notes, setNotes] = useState("");
@@ -50,10 +49,6 @@ export default function QuickLog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
-
-  const lastKarma = recent.find(
-    (r) => String(r.account_id) === accountId && r.total_karma != null
-  )?.total_karma;
 
   const hasText = showText && (title.trim() || text.trim());
 
@@ -103,7 +98,6 @@ export default function QuickLog({
           activity_date: date,
           posts_count: postCount,
           comments_count: commentCount,
-          total_karma: karma === "" ? null : Number(karma),
           notes,
         }),
       });
@@ -117,7 +111,6 @@ export default function QuickLog({
       setOk(
         `Saved for u/${name} on ${date}${hasText ? ` (${kind} text stored)` : ""} - day total is now ${json.posts_count} posts, ${json.comments_count} comments.`
       );
-      setKarma("");
       setPosts("0");
       setComments("0");
       setNotes("");
@@ -212,36 +205,17 @@ export default function QuickLog({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div>
-            <label htmlFor="ql-karma" className={labelCls}>
-              Total karma
-              <span className="ml-1 font-normal text-[var(--text-muted)]">
-                (optional)
-              </span>
-            </label>
-            <input
-              id="ql-karma"
-              type="number"
-              min="0"
-              value={karma}
-              onChange={(e) => setKarma(e.target.value)}
-              placeholder={lastKarma != null ? String(lastKarma) : "e.g. 1250"}
-              className={input}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="ql-notes" className={labelCls}>
-              Notes (optional)
-            </label>
-            <input
-              id="ql-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. 2 posts in r/SEO, rest were replies"
-              className={input}
-            />
-          </div>
+        <div>
+          <label htmlFor="ql-notes" className={labelCls}>
+            Notes (optional)
+          </label>
+          <input
+            id="ql-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. 2 posts in r/SEO, rest were replies"
+            className={input}
+          />
         </div>
 
         {/* Optional: keep the actual text of one post or comment */}

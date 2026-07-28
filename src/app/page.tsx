@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
 import GrowthChart from "@/components/GrowthChart";
 import QuickLog from "@/components/QuickLog";
-import KarmaEntry from "@/components/KarmaEntry";
+import EditableKarma from "@/components/EditableKarma";
 import YesterdayWidget from "@/components/YesterdayWidget";
 import EmptyState from "@/components/EmptyState";
 import SetupNotice from "@/components/SetupNotice";
@@ -66,8 +66,6 @@ export default async function Dashboard() {
 
       <YesterdayWidget accounts={accounts} date={yesterdayDateString()} />
 
-      <KarmaEntry accounts={accounts} />
-
       <QuickLog
         accounts={accounts}
         recent={dailyLog}
@@ -116,8 +114,12 @@ export default async function Dashboard() {
                   <td className="px-3 py-2.5">
                     <StatusBadge status={a.status} />
                   </td>
-                  <td className="tabular px-3 py-2.5 text-right font-semibold">
-                    {a.total_karma ? formatKarma(a.total_karma) : "-"}
+                  <td className="tabular px-3 py-2.5 text-right">
+                    <EditableKarma
+                      accountId={a.id}
+                      username={a.username}
+                      karma={a.total_karma}
+                    />
                   </td>
                   <td className="tabular px-3 py-2.5 text-right">
                     <Delta value={a.karma_delta_7d} />
