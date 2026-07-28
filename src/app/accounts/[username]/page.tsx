@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getKarmaHistory } from "@/lib/repos/karma";
 import { listDailyActivityForAccount } from "@/lib/repos/dailyActivity";
+import { listContent } from "@/lib/repos/content";
 import { getAccountOverviewByUsername } from "@/lib/services/overview";
-import { formatKarma } from "@/lib/format";
+import { formatKarma, formatDate, truncate } from "@/lib/format";
 import { StatTile, Delta } from "@/components/StatTile";
 import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
@@ -27,9 +28,10 @@ export default async function AccountDetailPage({
   if (!result) notFound();
   const { account, overview } = result;
 
-  const [snapshots, log] = await Promise.all([
+  const [snapshots, log, content] = await Promise.all([
     getKarmaHistory(account.id),
     listDailyActivityForAccount(account.id),
+    listContent(account.id, 100),
   ]);
   const latest = snapshots[snapshots.length - 1];
 
@@ -130,6 +132,80 @@ export default async function AccountDetailPage({
               ))}
             </tbody>
           </table>
+        )}
+      </section>
+
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[var(--gridline)] px-4 py-3">
+          <h2 className="text-sm font-semibold">Posts &amp; comments</h2>
+          {content.length ? (
+            <span className="tabular text-xs text-[var(--text-muted)]">
+              {content.filter((c) => c.kind === "post").length} posts ·{" "}
+              {content.filter((c) => c.kind === "comment").length} comments
+            </span>
+          ) : null}
+        </div>
+        {content.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+            No posts or comments written down for this account yet. Use &ldquo;Write
+            the post or comment&rdquo; in the dashboard&apos;s activity form.
+          </p>
+        ) : (
+          <ul className="divide-y divide-[var(--gridline)]">
+            {content.map((c) => (
+              <li key={c.id} className="px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <span
+                    className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
+                    style={{
+                      background: "var(--surface-2)",
+                      color:
+                        c.kind === "post"
+                          ? "var(--series-1)"
+                          : "var(--series-2)",
+                    }}
+                  >
+                    {c.kind}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    {c.kind === "post" ? (
+                      <>
+                        {c.url ? (
+                          <a
+                            href={c.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block truncate text-sm font-medium hover:underline"
+                          >
+                            {c.title}
+                          </a>
+                        ) : (
+                          <p className="truncate text-sm font-medium">{c.title}</p>
+                        )}
+                        {c.body ? (
+                          <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                            {truncate(c.body, 160)}
+                          </p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm">{truncate(c.body, 200)}</p>
+                        {c.title ? (
+                          <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
+                            on: {c.title}
+                          </p>
+                        ) : null}
+                      </>
+                    )}
+                    <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                      r/{c.subreddit} · {formatDate(c.posted_at)}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>
