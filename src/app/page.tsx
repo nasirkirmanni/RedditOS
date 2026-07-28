@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/Badges";
 import Avatar from "@/components/Avatar";
 import GrowthChart from "@/components/GrowthChart";
 import QuickLog from "@/components/QuickLog";
+import KarmaEntry from "@/components/KarmaEntry";
 import YesterdayWidget from "@/components/YesterdayWidget";
 import EmptyState from "@/components/EmptyState";
 import SetupNotice from "@/components/SetupNotice";
@@ -64,6 +65,8 @@ export default async function Dashboard() {
       </div>
 
       <YesterdayWidget accounts={accounts} date={yesterdayDateString()} />
+
+      <KarmaEntry accounts={accounts} />
 
       <QuickLog
         accounts={accounts}
